@@ -4,22 +4,14 @@ from pprint import pprint
 import itertools
 
 
-class BoardElement:
-    def __init__(self, number: int):
-        self.number = number
-        self.is_marked = False
-
-    def mark(self):
-        self.is_marked = True
-
 class BingoBoard:
     def __init__(self, board_lines: List[List[int]]):
         self.rows = board_lines
         self.n_rows = len(board_lines)
         self.n_columns = len(board_lines[0])
-        self.marked_rows = [[False for _ in range(0, self.n_columns)] for _ in range(0, self.n_rows)]
-        pprint(self.marked_rows)
-
+        self.marked_rows = [
+            [False for _ in range(0, self.n_columns)] for _ in range(0, self.n_rows)
+        ]
 
     def _find_index_of(self, number: int):
         for row_number, row in enumerate(self.rows):
@@ -39,13 +31,11 @@ class BingoBoard:
         self.marked_rows[index_of_number[0]][index_of_number[1]] = True
 
     def is_complete(self):
-       return self._has_complete_row() or self._has_complete_column()
-
-
+        return self._has_complete_row() or self._has_complete_column()
 
     def _has_complete_row(self):
         return self._all_marked(self.marked_rows)
-        
+
     def _has_complete_column(self):
         marked_columns = [[] for _ in range(0, self.n_columns)]
         for row in self.marked_rows:
@@ -54,14 +44,26 @@ class BingoBoard:
 
         return self._all_marked(marked_columns)
 
-
     @staticmethod
     def _all_marked(marked_values: List[List[bool]]) -> bool:
         for row in marked_values:
-           if row[0] is True and len(set(row)) == 1:
-               return True
+            if row[0] is True and len(set(row)) == 1:
+                return True
 
         return False
+
+    def sum_of_unmarked_elements(self):
+        unmarked_numbers = []
+        for row_number, row in enumerate(self.marked_rows):
+            unmarked_numbers.extend(
+                [
+                    self.rows[row_number][column_number]
+                    for column_number, is_marked in enumerate(row)
+                    if not is_marked
+                ]
+            )
+
+        return sum(unmarked_numbers)
 
 
 def parse_boards(filename: str) -> List[BingoBoard]:
@@ -70,9 +72,11 @@ def parse_boards(filename: str) -> List[BingoBoard]:
     board_lines = [line for line in open(filename, "r")]
 
     for line_number, line in enumerate(board_lines):
-        board_line = [int(component) for component in line.strip().split(" ") if component != ""]
+        board_line = [
+            int(component) for component in line.strip().split(" ") if component != ""
+        ]
 
-        if not board_line :
+        if not board_line:
             boards.append(BingoBoard(board))
             board = []
             continue
@@ -85,6 +89,7 @@ def parse_boards(filename: str) -> List[BingoBoard]:
 
     return boards
 
+
 if __name__ == "__main__":
 
     boards_file = sys.argv[1]
@@ -92,20 +97,32 @@ if __name__ == "__main__":
 
     boards = parse_boards(boards_file)
 
-    numbers = [13, 2, 9, 10, 12, 15]
+    numbers = [
+        int(number)
+        for number in itertools.chain.from_iterable(
+            [line.strip().split(",") for line in open(numbers_file, "r")]
+        )
+    ]
 
     winner = None
+
+    previous_number = None
 
     for number in numbers:
         if winner:
             pprint("We have a winner!")
             pprint(winner.rows)
+
+            print(f"Result: {winner.sum_of_unmarked_elements() * previous_number}")
             break
 
-        print(f"Number is: {number}")
+        previous_number = number
 
         for board in boards:
             board.mark_number_if_present(number)
             if board.is_complete():
                 winner = board
                 break
+
+    if not winner:
+        print("No one won :(")
