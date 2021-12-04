@@ -90,6 +90,67 @@ def parse_boards(filename: str) -> List[BingoBoard]:
     return boards
 
 
+def find_first_winner(boards: List[BingoBoard], numbers: List[int]):
+    winner = None
+
+    previous_number = None
+
+    for number in numbers:
+        if winner:
+            pprint("We have a winner!")
+            pprint(winner.rows)
+
+            print(
+                f"Winning score: {winner.sum_of_unmarked_elements() * previous_number}"
+            )
+            break
+
+        previous_number = number
+
+        for board in boards:
+            board.mark_number_if_present(number)
+            if board.is_complete():
+                winner = board
+                break
+
+    if not winner:
+        print("No one won :(")
+
+
+def find_last_loser(boards: List[BingoBoard], numbers: List[int]):
+    incomplete_boards = [board for board in boards]
+
+    previous_number = None
+
+    for number in numbers:
+
+        previous_number = number
+
+        complete_board_indices = []
+        for idx, board in enumerate(incomplete_boards):
+            board.mark_number_if_present(number)
+            if board.is_complete():
+                complete_board_indices.append(idx)
+
+        is_last_completed_board = (
+            len(incomplete_boards) == 1 and len(complete_board_indices) == 1
+        )
+
+        if is_last_completed_board:
+            loser = incomplete_boards[0]
+
+            pprint("We have a loser!")
+            pprint(loser.rows)
+            print(f"Losing score {loser.sum_of_unmarked_elements() * previous_number}")
+            break
+
+        incomplete_boards = [
+            board
+            for idx, board in enumerate(incomplete_boards)
+            if idx not in complete_board_indices
+        ]
+
+
 if __name__ == "__main__":
 
     boards_file = sys.argv[1]
@@ -104,25 +165,5 @@ if __name__ == "__main__":
         )
     ]
 
-    winner = None
-
-    previous_number = None
-
-    for number in numbers:
-        if winner:
-            pprint("We have a winner!")
-            pprint(winner.rows)
-
-            print(f"Result: {winner.sum_of_unmarked_elements() * previous_number}")
-            break
-
-        previous_number = number
-
-        for board in boards:
-            board.mark_number_if_present(number)
-            if board.is_complete():
-                winner = board
-                break
-
-    if not winner:
-        print("No one won :(")
+    find_first_winner(boards, numbers)
+    find_last_loser(boards, numbers)
