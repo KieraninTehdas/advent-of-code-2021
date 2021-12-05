@@ -14,14 +14,15 @@ class LineSegment:
         self.starting_point = starting_point
         self.ending_point = ending_point
 
-    def is_axis_parallel_line(self):
+    def _is_axis_parallel_line(self):
         return (
             self.starting_point.x == self.ending_point.x
             or self.starting_point.y == self.ending_point.y
         )
 
-    def construct_line_points(self) -> List[Point]:
+    def _construct_axis_parallel_line_points(self) -> List[Point]:
         if self.starting_point.x == self.ending_point.x:
+            # y is changing!
             step = -1 if self.starting_point.y > self.ending_point.y else 1
             stop = self.ending_point.y - 1 if step < 0 else self.ending_point.y + 1
 
@@ -29,7 +30,8 @@ class LineSegment:
                 Point(x=self.starting_point.x, y=y_value)
                 for y_value in range(self.starting_point.y, stop, step)
             ]
-        elif self.starting_point.y == self.ending_point.y:
+        else:
+            # x is changing!
             step = -1 if self.starting_point.x > self.ending_point.x else 1
             stop = self.ending_point.x - 1 if step < 0 else self.ending_point.x + 1
 
@@ -37,8 +39,25 @@ class LineSegment:
                 Point(x=x_value, y=self.starting_point.y)
                 for x_value in range(self.starting_point.x, stop, step)
             ]
+
+    def _construct_diagonal_line_points(self) -> List[Point]:
+        x_step = -1 if self.starting_point.x > self.ending_point.x else 1
+        y_step = -1 if self.starting_point.y > self.ending_point.y else 1
+        x_stop = self.ending_point.x - 1 if x_step < 0 else self.ending_point.x + 1
+        y_stop = self.ending_point.y - 1 if y_step < 0 else self.ending_point.y + 1
+
+        coordinates = zip(
+            [x for x in range(self.starting_point.x, x_stop, x_step)],
+            [y for y in range(self.starting_point.y, y_stop, y_step)],
+        )
+
+        return [Point(x=coordinate[0], y=coordinate[1]) for coordinate in coordinates]
+
+    def construct_line_points(self) -> List[Point]:
+        if self._is_axis_parallel_line():
+            return self._construct_axis_parallel_line_points()
         else:
-            return []
+            return self._construct_diagonal_line_points()
 
 
 if __name__ == "__main__":
@@ -58,9 +77,8 @@ if __name__ == "__main__":
             starting_point=starting_point, ending_point=ending_point
         )
 
-        if line_segment.is_axis_parallel_line():
-            for point in line_segment.construct_line_points():
-                grid_points[point] += 1
+        for point in line_segment.construct_line_points():
+            grid_points[point] += 1
 
     n_overlap_points = sum(1 for count in grid_points.values() if count > 1)
 
